@@ -6,16 +6,22 @@
 
 // Debugger trigger for zen::fmt::impl::assert_fail
 #ifdef ZEN_COMPILER_MSVC
-extern "C" void DebugBreak();
+    extern "C" void DebugBreak();
+    #ifdef _DEBUG
+        #define ZEN_DEBUG
+    #endif
 #else
-#include <csignal>
+    #include <csignal>
+    #ifdef _NDEBUG
+        #define ZEN_DEBUG
+    #endif
 #endif
 
 // Todo macro for indicating unfinished implementations
 #define todo(name)          assertf(false, "TODO: implement " name)
 
 // Formatted assert with fmt library
-#ifdef _DEBUG
+#ifdef ZEN_DEBUG
 #define assertf(expr, ...)  (static_cast <bool>(expr) \
     ? void (0) \
     : zen::fmt::impl::assert_fail(__FILE__, __FUNCTION__, __LINE__, #expr, __VA_ARGS__ ))
@@ -95,7 +101,7 @@ struct buffer : sstring<N> {
     using sstring<N>::end;
     using sstring<N>::max_size;
     using size_type = typename sstring<N>::size_type;
-    
+
     buffer() = default;
 
     buffer& operator<<(char c)                 noexcept { append(c); return *this; }

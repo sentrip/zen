@@ -1,14 +1,19 @@
 #!/usr/bin/sh
-if [ ! -e build ] || [ "$1" = "-c" ]; then
+if [ "$1" = "-b" ]; then
     mkdir -p build
     cd build
-    cmake ..
+    cmake ..  -DCMAKE_BUILD_TYPE=Release
     cd ..
-fi
-if [ "$1" = "-b" ]; then
-    cmake --build build --target bench --config Release
+    cmake --build build --target benchmark
+    cmake --build build --target bench
     ./build/bench/bench
 else
+    if [ ! -e build ] || [ "$1" = "-c" ]; then
+        mkdir -p build
+        cd build
+        cmake ..
+        cd ..
+    fi
     cmake --build build --target test
     ./build/test/test
 fi

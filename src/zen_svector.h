@@ -134,7 +134,6 @@ public:
     static ZEN_FORCEINLINE constexpr bool         small()           noexcept { return true; }
     static ZEN_FORCEINLINE constexpr usize        capacity()        noexcept { return 0; }
     static ZEN_FORCEINLINE constexpr T*           data()            noexcept { return nullptr; }
-    static ZEN_FORCEINLINE constexpr const T*     data()            noexcept { return nullptr; }
     static ZEN_FORCEINLINE constexpr void         shrink_to_fit() {}
     static ZEN_FORCEINLINE constexpr void         swap(svec_base& other) noexcept {}
 };
@@ -150,7 +149,7 @@ protected:
     static ZEN_FORCEINLINE constexpr void resize_shrink(usize) {}
     static ZEN_FORCEINLINE constexpr void reset_small() {}
     
-    ZEN_FORCEINLINE constexpr void ensure_capacity(usize n) {
+    ZEN_FORCEINLINE constexpr void ensure_capacity([[maybe_unused]] usize n) {
         assertf(m_size + n <= N, "vector is full");
     }
 
@@ -426,12 +425,12 @@ inline void svector<T, N, Overflow>::resize(size_type n, const T& value) {
 }
 
 template<typename T, usize N, bool Overflow>
-svector<T, N, Overflow>::svector(const svector& v) {
+svector<T, N, Overflow>::svector(const svector& v) : svector{} {
     for(auto& a: v) push_back(a);
 }
 
 template<typename T, usize N, bool Overflow>
-svector<T, N, Overflow>::svector(svector&& v) noexcept {
+svector<T, N, Overflow>::svector(svector&& v) noexcept : svector{} {
     for(auto& a: v) push_back(std::move(a));
     v.reset_small();
 }
