@@ -12,7 +12,7 @@
     #endif
 #else
     #include <csignal>
-    #ifdef _NDEBUG
+    #ifndef NDEBUG
         #define ZEN_DEBUG
     #endif
 #endif
