@@ -29,11 +29,11 @@ struct sstring {
     ZEN_ND constexpr char*          end()                       noexcept { return m_data + m_size; }
     ZEN_ND constexpr const char*    end()                 const noexcept { return m_data + m_size; }
     ZEN_ND constexpr char&          front()                     noexcept { return *m_data; }
-    ZEN_ND constexpr const char     front()               const noexcept { return *m_data; }
+    ZEN_ND constexpr char           front()               const noexcept { return *m_data; }
     ZEN_ND constexpr char&          back()                      noexcept { return *(m_data + m_size - 1); }
-    ZEN_ND constexpr const char     back()                const noexcept { return *(m_data + m_size - 1); }
+    ZEN_ND constexpr char           back()                const noexcept { return *(m_data + m_size - 1); }
     ZEN_ND constexpr char&          operator[](usize i)         noexcept { return m_data[i]; }
-    ZEN_ND constexpr const char     operator[](usize i)   const noexcept { return m_data[i]; }
+    ZEN_ND constexpr char           operator[](usize i)   const noexcept { return m_data[i]; }
 
     constexpr void clear()                          noexcept { m_size = 0; }
     constexpr void append(char c)                   noexcept { m_data[m_size++] = c; }

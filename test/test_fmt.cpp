@@ -20,7 +20,7 @@ TEST_CASE("fmt integer", "[utility]")
     TEST_FORMAT_BASIC("123"                 , "{}"      , 123);
     TEST_FORMAT_BASIC("123456789012"        , "{}"      , 123456789012);
     TEST_FORMAT_BASIC("-123456789012"       , "{}"      , -123456789012);
-    TEST_FORMAT_BASIC("18446744073709551615", "{}"      , 18446744073709551615);
+    TEST_FORMAT_BASIC("18446744073709551615", "{}"      , UINT64_C(18446744073709551615));
     TEST_FORMAT_BASIC("0xcafebabe"          , "{}"      , (const void*)(ptr + 0xcafebabe));
 }
 
