@@ -960,20 +960,20 @@ namespace zen::bytes {
 // Basic bswap functions using GCC/clang/MSVC intrinsics.
 #ifdef ZEN_COMPILER_MSVC
 #include <cstdlib>
-constexpr u8  bswap(u8 v)  { return v; }
-static    u16 bswap(u16 v) { return _byteswap_ushort(v); }
-static    u32 bswap(u32 v) { return _byteswap_ulong(v); }
-static    u64 bswap(u64 v) { return _byteswap_uint64(v); }
+constexpr u8  bswap(u8 v)  noexcept { return v; }
+static    u16 bswap(u16 v) noexcept { return _byteswap_ushort(v); }
+static    u32 bswap(u32 v) noexcept { return _byteswap_ulong(v); }
+static    u64 bswap(u64 v) noexcept { return _byteswap_uint64(v); }
 #else
-constexpr u8  bswap(u8 v)  { return v; }
-static    u16 bswap(u16 v) { return __builtin_bswap16(v); }
-static    u32 bswap(u32 v) { return __builtin_bswap32(v); }
-static    u64 bswap(u64 v) { return __builtin_bswap64(v); }
+constexpr u8  bswap(u8 v)  noexcept { return v; }
+static    u16 bswap(u16 v) noexcept { return __builtin_bswap16(v); }
+static    u32 bswap(u32 v) noexcept { return __builtin_bswap32(v); }
+static    u64 bswap(u64 v) noexcept { return __builtin_bswap64(v); }
 #endif
 
 // Load an integer from memory
 template <class T>
-static T load(const void* Ptr) {
+static T load(const void* Ptr) noexcept {
     static_assert(std::is_integral<T>::value, "T must be an integer!");
     T Ret;
     memcpy(&Ret, Ptr, sizeof(T));
@@ -982,7 +982,7 @@ static T load(const void* Ptr) {
 
 // Store an integer to memory
 template <class T>
-static void store(void* Ptr, const T V) {
+static void store(void* Ptr, const T V) noexcept {
     static_assert(std::is_integral<T>::value, "T must be an integer!");
     memcpy(Ptr, &V, sizeof(V));
 }
@@ -990,7 +990,7 @@ static void store(void* Ptr, const T V) {
 
 // Decodes little-endian input (u8) into any-endian output (T). Assumes len is a multiple of sizeof(T).
 template<typename T>
-constexpr void decode(T* output, const u8* input, usize len) 
+constexpr void decode(T* output, const u8* input, usize len) noexcept
 {
     static_assert(!std::is_same_v<T, u8>, "use memcpy to copy single bytes");
     static_assert(std::is_same_v<T, u16> || std::is_same_v<T, u32> || std::is_same_v<T, u64>, "T must be an unsigned integer");
@@ -1019,7 +1019,7 @@ constexpr void decode(T* output, const u8* input, usize len)
 
 // Encodes any-endian input (T) into little-endian output (u8). Assumes len is a multiple of sizeof(T).
 template<typename T>
-constexpr void encode(u8* output, const T* input, usize len) 
+constexpr void encode(u8* output, const T* input, usize len) noexcept
 {
     static_assert(!std::is_same_v<T, u8>, "use memcpy to copy single bytes");
     static_assert(std::is_same_v<T, u16> || std::is_same_v<T, u32> || std::is_same_v<T, u64>, "T must be an unsigned integer");
@@ -1404,7 +1404,7 @@ struct buffer : sstring<N> {
     using sstring<N>::begin;
     using sstring<N>::end;
     using sstring<N>::max_size;
-    using sstring<N>::size_type;
+    using size_type = typename sstring<N>::size_type;
     
     buffer() = default;
 
@@ -1432,16 +1432,16 @@ struct buffer : sstring<N> {
     buffer& operator<<(const void* v)          noexcept { append("0x", 2); set_size(size_type(int_to_chars<16>(end(), begin() + max_size(), u64(reinterpret_cast<uintptr_t>(v))) - begin())); return *this; }
 
     template<typename T>
-    buffer& operator<<(const binary<T>& v)     noexcept { append("0b", 2); set_size(size_type(int_to_chars<2>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const binary<T>& v)     noexcept { set_size(size_type(int_to_chars<2>(end(), begin() + max_size(), v.value) - begin())); return *this; }
 
     template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    buffer& operator<<(const hex<T>& v)        noexcept { append("0x", 2); set_size(size_type(int_to_chars<16>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const hex<T>& v)        noexcept { set_size(size_type(int_to_chars<16>(end(), begin() + max_size(), v.value) - begin())); return *this; }
 
     template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    buffer& operator<<(const hexu<T>& v)       noexcept { append("0x", 2); set_size(size_type(int_to_chars<16 | impl::HEX_UPPER>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const hexu<T>& v)       noexcept { set_size(size_type(int_to_chars<16 | impl::HEX_UPPER>(end(), begin() + max_size(), v.value) - begin())); return *this; }
     
     template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    buffer& operator<<(const octal<T>& v)      noexcept { append("0o", 2); set_size(size_type(int_to_chars<8>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const octal<T>& v)      noexcept { set_size(size_type(int_to_chars<8>(end(), begin() + max_size(), v.value) - begin())); return *this; }
 
     template<typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
     buffer& operator<<(const precisev<T>& v)   noexcept { set_size(size_type(float_to_chars(end(), begin() + max_size(), v.value, usize(v.precision)) - begin())); return *this; }
@@ -1553,6 +1553,15 @@ void format_part(Out& out, string_view spec, T&& value) noexcept {
         if (!format_parse_spec(spec, style, fill, align, n, precision)) {
             // panic fail
         }
+        if constexpr(std::is_integral_v<std::remove_reference_t<T>>) {
+            switch (style) {
+                case 'b': out << "0b"; break;
+                case 'x': out << "0x"; break;
+                case 'X': out << "0x"; break;
+                case 'o': out << "0o"; break;
+                default: break;
+            }
+        } 
         if (ZEN_LIKELY(align == '<')) {
             const usize o = out.size();
             format_with_style(out, style, precision, ZEN_FWD(value));
@@ -1670,7 +1679,7 @@ constexpr bool chars_to_int(const char* begin, const char* end, T& value, num::i
 }
 
 template<usize Base, typename T>
-char* int_to_chars(char* begin, char* end, const T& value, num::index_t<Base>) noexcept
+char* int_to_chars(char* begin, [[maybe_unused]] char* end, const T& value, num::index_t<Base>) noexcept
 {
     auto val = value;
     if constexpr(std::is_signed_v<T>) {
@@ -1702,7 +1711,7 @@ char* int_to_chars(char* begin, char* end, const T& value, num::index_t<Base>) n
         *(--p) = str100p[val];
         const auto* b = reinterpret_cast<const char*>(p) + (val < 10);
         const auto n = reinterpret_cast<const char*>(buffer + 10) - b;        
-        assert((end - begin) >= n && "Not enough space to format integer");
+        // assert((end - begin) >= n && "Not enough space to format integer");
         memcpy(begin, b, n);
         return begin + n;
     }
@@ -1721,7 +1730,7 @@ char* int_to_chars(char* begin, char* end, const T& value, num::index_t<Base>) n
             *p = OUTPUT[old - (val * DIVISOR)];
         }
         const auto n = buffer + 64 - p;
-        assert((end - begin) >= n && "Not enough space to format integer");
+        // assert((end - begin) >= n && "Not enough space to format integer");
         memcpy(begin, p, n);
         return begin + n;
     }
@@ -1808,16 +1817,11 @@ Out& operator<<(Out& o, const T& v) noexcept {
     
 
 // Type name impl
-namespace impl {
-
 template<typename Type>
-constexpr const char* type_name(usize& n) noexcept 
-{
+constexpr auto type_name() noexcept {
     // NOTE: In order for this trick to work, the only template allowed 
     // in the function signature is a user template. Therefore, to return
-    // a string view (a template), we need a primitive helper function
-    // that uses the function name trick to get the type name, which is
-    // then used by the actual function to return a usable value
+    // a string view (a template), we need the return type to be 'auto'
     #if defined(ZEN_COMPILER_GCC) || defined(ZEN_COMPILER_CLANG)
         #define ZEN_PRETTY_FUNCTION __PRETTY_FUNCTION__
         #define ZEN_PRETTY_FUNCTION_PREFIX '='
@@ -1829,26 +1833,15 @@ constexpr const char* type_name(usize& n) noexcept
     #endif
 
     #ifndef ZEN_PRETTY_FUNCTION
-    return "";
+    return string_view{""};
     #else
     string_view pretty_function{ZEN_PRETTY_FUNCTION};
     auto first = pretty_function.find_first_not_of(' ', pretty_function.find_first_of(ZEN_PRETTY_FUNCTION_PREFIX) + 1);
     auto value = pretty_function.substr(first, pretty_function.find_last_of(ZEN_PRETTY_FUNCTION_SUFFIX) - first);
-    n = value.size();
-    return value.data();
+    return value;
     #endif
 
     #undef ZEN_PRETTY_FUNCTION
-}
-
-}
-
-template<typename Type>
-constexpr string_view type_name() noexcept 
-{
-    usize n{};
-    const char* c = impl::type_name<Type>(n);
-    return string_view{c, n};
 }
 
 }
@@ -1921,6 +1914,111 @@ private:
 
 #endif // ZEN_HANDLE_H
 
+#ifndef ZEN_PPTR_H
+#define ZEN_PPTR_H
+
+
+
+#define ZEN_PTR_REAL_WIDTH_BITS     48u
+
+
+// In addition, the AMD specification requires that the most significant 16 bits of any virtual address, bits 48 through 63, 
+// must be copies of bit 47 (like sign extension). If this requirement is not met, the processor will raise an exception
+#ifdef ZEN_COMPILER_MSVC
+    #ifdef _M_AMD64
+        #define ZEN_PTR_EXTEND_LAST_SIGNIFICANT_BIT
+    #endif
+#else
+    #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64)
+        #define ZEN_PTR_EXTEND_LAST_SIGNIFICANT_BIT
+    #endif
+#endif
+
+
+namespace zen {
+
+template<typename T>
+struct pptr {
+    using data_t = num::with::bit_width<64u - ZEN_PTR_REAL_WIDTH_BITS>;
+    using vptr_t = std::conditional_t<std::is_const_v<T>, const void*, void*>;
+
+    ZEN_FORCEINLINE constexpr pptr() noexcept : v{} {}
+    ZEN_FORCEINLINE constexpr pptr(T* ptr) noexcept : v{to_u64(ptr)} {}
+    ZEN_FORCEINLINE constexpr pptr(T* ptr, data_t data) noexcept : v{to_u64(ptr) | static_cast<u64>(data) << NBits} {}
+    ZEN_FORCEINLINE constexpr pptr(vptr_t ptr) noexcept : v{to_u64(ptr)} {}
+    ZEN_FORCEINLINE constexpr pptr(vptr_t ptr, data_t data) noexcept : v{to_u64(ptr) | static_cast<u64>(data) << NBits} {}
+    
+    ZEN_FORCEINLINE constexpr pptr&  operator=(T* ptr)              noexcept { v = (v & DataMask) | to_u64(ptr); }
+    ZEN_FORCEINLINE constexpr pptr&  operator=(vptr_t ptr)          noexcept { v = (v & DataMask) | to_u64(ptr); }
+    ZEN_FORCEINLINE constexpr pptr&  operator=(data_t x)            noexcept { set_data(x); return *this; }
+    
+    ZEN_FORCEINLINE constexpr operator  bool()                const noexcept { return ptr() != nullptr; }
+    ZEN_FORCEINLINE constexpr operator  T*()                  const noexcept { return ptr(); }
+    ZEN_FORCEINLINE constexpr operator  vptr_t()              const noexcept { return ptr(); }
+
+    ZEN_FORCEINLINE constexpr void   set_data(data_t x)              noexcept { v = (v & PtrMask) | u64(x) << NBits;}
+    ZEN_FORCEINLINE constexpr data_t data()                    const noexcept { return static_cast<u16>(v >> NBits);  }
+    ZEN_FORCEINLINE constexpr T*     get()                     const noexcept { return ptr(); }
+    ZEN_FORCEINLINE constexpr T*     operator->()              const noexcept { return ptr(); }
+    ZEN_FORCEINLINE constexpr T&     operator*()               const noexcept { return *ptr(); }
+
+    ZEN_FORCEINLINE constexpr T&     operator[](usize i)       const noexcept { return ptr()[i]; }
+    ZEN_FORCEINLINE constexpr bool   operator==(const pptr& o) const noexcept { return v == o.v; }
+    ZEN_FORCEINLINE constexpr bool   operator!=(const pptr& o) const noexcept { return v != o.v; }
+    ZEN_FORCEINLINE constexpr bool   operator< (const pptr& o) const noexcept { return ptr() < o.ptr(); }
+    ZEN_FORCEINLINE constexpr bool   operator> (const pptr& o) const noexcept { return ptr() > o.ptr(); }
+    ZEN_FORCEINLINE constexpr bool   operator<=(const pptr& o) const noexcept { return ptr() <= o.ptr(); }
+    ZEN_FORCEINLINE constexpr bool   operator>=(const pptr& o) const noexcept { return ptr() >= o.ptr(); }
+    ZEN_FORCEINLINE constexpr pptr&  operator++()                    noexcept { inc(1); return *this; }
+    ZEN_FORCEINLINE constexpr pptr   operator++(int)                 noexcept { auto v = *this; inc(1); return v; }
+    ZEN_FORCEINLINE constexpr pptr&  operator--()                    noexcept { dec(1); return *this; }
+    ZEN_FORCEINLINE constexpr pptr   operator--(int)                 noexcept { auto v = *this; dec(1); return v; }
+    ZEN_FORCEINLINE constexpr pptr&  operator+=(ptrdiff_t n)         noexcept { inc(n); return *this; }
+    ZEN_FORCEINLINE constexpr pptr   operator+ (ptrdiff_t n)   const noexcept { auto v = *this; inc(n); return v; }
+    ZEN_FORCEINLINE constexpr pptr&  operator-=(ptrdiff_t n)         noexcept { dec(n); return *this; }
+    ZEN_FORCEINLINE constexpr pptr   operator- (ptrdiff_t n)   const noexcept { auto v = *this; dec(n); return v; }
+
+private:
+    static ZEN_FORCEINLINE constexpr u64 to_u64(const void* ptr) noexcept {
+        return static_cast<u64>(reinterpret_cast<uintptr_t>(ptr)) & PtrMask;
+    }
+    static ZEN_FORCEINLINE constexpr u64 last_bit_extended(u64 v) noexcept {
+        const u64 bit = v & (u64(1u) << (NBits - 1));
+        return bit ? (v | UINT64_C(0xffff000000000000)) : v;
+    }
+    
+    ZEN_FORCEINLINE constexpr T* ptr()  const noexcept {
+        #ifdef ZEN_PTR_EXTEND_LAST_SIGNIFICANT_BIT
+            return reinterpret_cast<T*>(last_bit_extended(v & PtrMask));
+        #else
+            return reinterpret_cast<T*>(v & PtrMask);
+        #endif
+    }
+
+    ZEN_FORCEINLINE constexpr void inc(ptrdiff_t n) noexcept {
+        v = (v & DataMask) | ((v & PtrMask) + n);
+    }
+
+    ZEN_FORCEINLINE constexpr void dec(ptrdiff_t n) noexcept {
+        v = (v & DataMask) | ((v & PtrMask) - n);
+    }
+
+    static constexpr u64 NBits    = ZEN_PTR_REAL_WIDTH_BITS;
+    static constexpr u64 DataMask = UINT64_MAX << NBits;
+    static constexpr u64 PtrMask  = UINT64_MAX >> (64 - NBits);
+    u64 v{};
+};
+
+template<typename T> pptr(T*) -> pptr<T>;
+template<typename T> pptr(T*, u16) -> pptr<T>;
+
+}
+
+#undef ZEN_PTR_REAL_WIDTH_BITS
+#undef ZEN_PTR_EXTEND_LAST_SIGNIFICANT_BIT
+
+#endif // ZEN_PPTR_H
+
 #ifndef ZEN_RESULT_H
 #define ZEN_RESULT_H
 
@@ -1975,11 +2073,12 @@ struct result {
     static_assert(!std::is_same_v<T, Code>, "T must not be the same type as Code");
     static_assert(impl::result_code_is_integral<Code>::value, "Code must derive from an integral type");
 
-    ZEN_FORCEINLINE constexpr result()                          noexcept : v{}, c{} {}
+    ZEN_FORCEINLINE constexpr result()                          noexcept : v{}, c{std::is_same_v<T, empty_t> ? Success : Code{}} {}
+
     ZEN_FORCEINLINE constexpr result(const T& value)            noexcept : v{value}, c{Success} {}
+
     ZEN_FORCEINLINE constexpr result(T&&  value)                noexcept : v{ZEN_FWD(value)}, c{Success} {}
-    
-    template<typename = std::enable_if_t<!std::is_same_v<Code, bool>>>
+
     ZEN_FORCEINLINE constexpr result(Code code)                 noexcept : c{code} {}
 
     template<typename = std::enable_if_t<std::is_same_v<Code, bool>>>
@@ -2020,68 +2119,25 @@ private:
 
 #endif // ZEN_RESULT_H
 
-#ifndef ZEN_SPAN_H
-#define ZEN_SPAN_H
-
-
-namespace zen {
-
-template<typename T>
-struct span {
-    using value_type = T;
-
-    constexpr span() = default;
-    constexpr span(T* d, usize s)   noexcept : m_data{d}, m_size{s} {}
-    constexpr span(T* b, T* e)      noexcept : m_data{b}, m_size{static_cast<usize>(e-b)} {}
-
-    template<usize N>
-    constexpr span(T(&v)[N])        noexcept : m_data{&v[0]}, m_size{N} {}
-    
-    template<typename U, typename = std::void_t<decltype(std::declval<U&>().data() + std::declval<U&>().size())>>
-    constexpr span(U&& v)           noexcept : m_data{v.data()}, m_size{v.size()} {}
-
-    ZEN_ND constexpr bool        empty()               const noexcept { return m_size == 0; }
-    ZEN_ND constexpr usize       size()                const noexcept { return m_size; }
-    ZEN_ND constexpr T*          data()                const noexcept { return m_data; }
-    ZEN_ND constexpr T*          begin()               const noexcept { return m_data; }
-    ZEN_ND constexpr T*          end()                 const noexcept { return m_data + m_size; }
-    ZEN_ND constexpr T&          front()               const noexcept { return *m_data; }
-    ZEN_ND constexpr T&          back()                const noexcept { return *(m_data + m_size - 1); }
-    ZEN_ND constexpr T&          operator[](usize i)   const noexcept { return m_data[i]; }
-
-private:
-    T*     m_data{};
-    usize  m_size{};
-};
-
-// Deduction guides
-template<typename T>          span(T*, usize) -> span<T>;
-template<typename T>          span(T*, T*)    -> span<T>;
-template<typename T, usize N> span(T(&)[N])   -> span<T>;
-
-}
-
-#endif // ZEN_SPAN_H
-
-#ifndef ZEN_SVECTOR_H
-#define ZEN_SVECTOR_H
+#ifndef ZEN_SMALL_VEC_H
+#define ZEN_SMALL_VEC_H
 
 
 namespace zen {
 
 // If the type is defined, try to ensure vector fits inside of a cache line
 template<typename T>
-static constexpr usize expected_svector_capacity = num::sizeof_type<T> 
+static constexpr usize expected_small_vec_capacity = num::sizeof_type<T> 
     ? ((ZEN_CACHE_LINE - sizeof(u64)) / num::sizeof_type<T>) 
     : 8;
 
 
-template<typename T, usize N = expected_svector_capacity<T>, bool Overflow = true>
-struct svector;
+template<typename T, usize N = expected_small_vec_capacity<T>, bool Overflow = true>
+struct small_vec;
 
 
-template<typename T, usize N = expected_svector_capacity<T>>
-using fvector = svector<T, N, false>;
+template<typename T, usize N = expected_small_vec_capacity<T>>
+using fixed_vec = small_vec<T, N, false>;
 
 
 namespace impl {
@@ -2092,7 +2148,7 @@ struct svec_base;
 }
 
 template<typename T, usize N, bool Overflow>
-struct svector : impl::svec_base<T, N, Overflow> {
+struct small_vec : impl::svec_base<T, N, Overflow> {
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
@@ -2106,23 +2162,23 @@ struct svector : impl::svec_base<T, N, Overflow> {
     using base_type::base_type;
 
     template<typename InputIt>
-    svector(InputIt b, InputIt e) { insert(end(), b, e); }
+    small_vec(InputIt b, InputIt e) { insert(end(), b, e); }
 
     template<typename R, typename = std::void_t<decltype(std::declval<R>().begin() == std::declval<R>().end())>>
-    svector(R r) : svector(r.begin(), r.end()) {}
+    small_vec(R r) : small_vec(r.begin(), r.end()) {}
 
     template<typename... Rest>
-    svector(T&& v0, T&& v1, Rest&&... rest) : svector() { push_back(v0); push_back(v1); (push_back(rest), ...); }
+    small_vec(T&& v0, T&& v1, Rest&&... rest) : small_vec() { push_back(v0); push_back(v1); (push_back(rest), ...); }
 
-    svector& operator=(init_list values)  { clear(); ensure_capacity(values.size()); for(auto& v: values) push_back(v); }
+    small_vec& operator=(init_list values)  { clear(); ensure_capacity(values.size()); for(auto& v: values) push_back(v); }
 
-    svector(const svector& v);
-    svector& operator=(const svector& v);
+    small_vec(const small_vec& v);
+    small_vec& operator=(const small_vec& v);
 
-    svector(svector&& v) noexcept;
-    svector& operator=(svector&& v) noexcept;
+    small_vec(small_vec&& v) noexcept;
+    small_vec& operator=(small_vec&& v) noexcept;
     
-    ~svector() { mem::destroy_n(begin(), m_size); }
+    ~small_vec() { mem::destroy_n(begin(), m_size); }
 
     constexpr usize           size()                const noexcept { return m_size; }
     constexpr bool            empty()               const noexcept { return m_size == 0; }
@@ -2196,7 +2252,6 @@ public:
     static ZEN_FORCEINLINE constexpr bool         small()           noexcept { return true; }
     static ZEN_FORCEINLINE constexpr usize        capacity()        noexcept { return 0; }
     static ZEN_FORCEINLINE constexpr T*           data()            noexcept { return nullptr; }
-    static ZEN_FORCEINLINE constexpr const T*     data()            noexcept { return nullptr; }
     static ZEN_FORCEINLINE constexpr void         shrink_to_fit() {}
     static ZEN_FORCEINLINE constexpr void         swap(svec_base& other) noexcept {}
 };
@@ -2352,7 +2407,7 @@ public:
 
 template<typename T, usize N, bool Overflow>
 template<typename... Args>
-inline T& svector<T, N, Overflow>::emplace_back(Args&&... args) {
+inline T& small_vec<T, N, Overflow>::emplace_back(Args&&... args) {
     if (ZEN_LIKELY(has_capacity(1))) {
         return *mem::construct_at(data() + m_size++, ZEN_FWD(args)...);
     } else {
@@ -2362,7 +2417,7 @@ inline T& svector<T, N, Overflow>::emplace_back(Args&&... args) {
 }
 
 template<typename T, usize N, bool Overflow>
-inline T& svector<T, N, Overflow>::push_back(const T& value) {
+inline T& small_vec<T, N, Overflow>::push_back(const T& value) {
     if (ZEN_LIKELY(has_capacity(1))) {
         return *mem::construct_at(data() + m_size++, value);
     } else {
@@ -2372,7 +2427,7 @@ inline T& svector<T, N, Overflow>::push_back(const T& value) {
 }
 
 template<typename T, usize N, bool Overflow>
-inline T& svector<T, N, Overflow>::push_back(T&& value) {
+inline T& small_vec<T, N, Overflow>::push_back(T&& value) {
     if (ZEN_LIKELY(has_capacity(1))) {
         return *mem::construct_at(data() + m_size++, std::move(value));
     } else {
@@ -2382,7 +2437,7 @@ inline T& svector<T, N, Overflow>::push_back(T&& value) {
 }
 
 template<typename T, usize N, bool Overflow>
-inline void svector<T, N, Overflow>::pop_back() {
+inline void small_vec<T, N, Overflow>::pop_back() {
     if (ZEN_UNLIKELY(empty()))
         return;
     mem::destroy_at(data() + --m_size);
@@ -2390,7 +2445,7 @@ inline void svector<T, N, Overflow>::pop_back() {
 
 template<typename T, usize N, bool Overflow>
 template<typename... Args>
-inline T& svector<T, N, Overflow>::emplace(const_iterator position, Args&&... args) {
+inline T& small_vec<T, N, Overflow>::emplace(const_iterator position, Args&&... args) {
     const usize i = position - data();
     ensure_capacity_insert(position, 1);
     m_size++;
@@ -2398,7 +2453,7 @@ inline T& svector<T, N, Overflow>::emplace(const_iterator position, Args&&... ar
 }
 
 template<typename T, usize N, bool Overflow>
-inline T* svector<T, N, Overflow>::insert(const_iterator position, T&& value) {
+inline T* small_vec<T, N, Overflow>::insert(const_iterator position, T&& value) {
     const usize i = position - data();
     ensure_capacity_insert(position, 1);
     m_size++;
@@ -2406,7 +2461,7 @@ inline T* svector<T, N, Overflow>::insert(const_iterator position, T&& value) {
 }
 
 template<typename T, usize N, bool Overflow>
-inline T* svector<T, N, Overflow>::insert(const_iterator position, const T& value) {
+inline T* small_vec<T, N, Overflow>::insert(const_iterator position, const T& value) {
     const usize i = position - data();
     ensure_capacity_insert(position, 1);
     m_size++;
@@ -2414,7 +2469,7 @@ inline T* svector<T, N, Overflow>::insert(const_iterator position, const T& valu
 }
 
 template<typename T, usize N, bool Overflow>
-inline T* svector<T, N, Overflow>::insert(const_iterator position, size_type n, const T& value) {
+inline T* small_vec<T, N, Overflow>::insert(const_iterator position, size_type n, const T& value) {
     const usize i = position - data();
     ensure_capacity_insert(position, n);
     m_size += n;
@@ -2424,7 +2479,7 @@ inline T* svector<T, N, Overflow>::insert(const_iterator position, size_type n, 
 
 template<typename T, usize N, bool Overflow>
 template<typename It>
-inline T* svector<T, N, Overflow>::insert(const_iterator position, It begin, It end) {
+inline T* small_vec<T, N, Overflow>::insert(const_iterator position, It begin, It end) {
     const usize n = end - begin;
     const usize i = position - data();
     ensure_capacity_insert(position, n);
@@ -2434,7 +2489,7 @@ inline T* svector<T, N, Overflow>::insert(const_iterator position, It begin, It 
 }
 
 template<typename T, usize N, bool Overflow>
-inline T* svector<T, N, Overflow>::erase(const_iterator position) {
+inline T* small_vec<T, N, Overflow>::erase(const_iterator position) {
     const usize i = position - data();
     mem::destroy_at(data() + i);
     mem::move(data() + i + 1, end(), data() + i);
@@ -2443,7 +2498,7 @@ inline T* svector<T, N, Overflow>::erase(const_iterator position) {
 }
 
 template<typename T, usize N, bool Overflow>
-inline T* svector<T, N, Overflow>::erase(const_iterator first, const_iterator last) {
+inline T* small_vec<T, N, Overflow>::erase(const_iterator first, const_iterator last) {
     const usize n = last - first;
     const usize i = first - data();
     mem::destroy_n(data() + i, n);
@@ -2453,18 +2508,18 @@ inline T* svector<T, N, Overflow>::erase(const_iterator first, const_iterator la
 }
 
 template<typename T, usize N, bool Overflow>
-inline void svector<T, N, Overflow>::clear() noexcept {
+inline void small_vec<T, N, Overflow>::clear() noexcept {
     mem::destroy_n(data(), m_size);
     m_size = 0;
 }
 
 template<typename T, usize N, bool Overflow>
-inline void svector<T, N, Overflow>::reserve(size_type n) {
+inline void small_vec<T, N, Overflow>::reserve(size_type n) {
     ensure_capacity(n);
 }
 
 template<typename T, usize N, bool Overflow>
-inline void svector<T, N, Overflow>::resize(size_type n) {
+inline void small_vec<T, N, Overflow>::resize(size_type n) {
     if (n < m_size) {
         mem::destroy_n(data() + n, m_size - n);
         resize_shrink(n);
@@ -2476,7 +2531,7 @@ inline void svector<T, N, Overflow>::resize(size_type n) {
 }
 
 template<typename T, usize N, bool Overflow>
-inline void svector<T, N, Overflow>::resize(size_type n, const T& value) {
+inline void small_vec<T, N, Overflow>::resize(size_type n, const T& value) {
     if (n < m_size) {
         mem::destroy_n(data() + n, m_size - n);
         resize_shrink(n);
@@ -2488,18 +2543,18 @@ inline void svector<T, N, Overflow>::resize(size_type n, const T& value) {
 }
 
 template<typename T, usize N, bool Overflow>
-svector<T, N, Overflow>::svector(const svector& v) {
+small_vec<T, N, Overflow>::small_vec(const small_vec& v) {
     for(auto& a: v) push_back(a);
 }
 
 template<typename T, usize N, bool Overflow>
-svector<T, N, Overflow>::svector(svector&& v) noexcept {
+small_vec<T, N, Overflow>::small_vec(small_vec&& v) noexcept {
     for(auto& a: v) push_back(std::move(a));
     v.reset_small();
 }
 
 template<typename T, usize N, bool Overflow>
-svector<T, N, Overflow>& svector<T, N, Overflow>::operator=(const svector& v) {
+small_vec<T, N, Overflow>& small_vec<T, N, Overflow>::operator=(const small_vec& v) {
     if (&v == this) return *this;
     clear();
     ensure_capacity(v.size());
@@ -2508,7 +2563,7 @@ svector<T, N, Overflow>& svector<T, N, Overflow>::operator=(const svector& v) {
 }
 
 template<typename T, usize N, bool Overflow>
-svector<T, N, Overflow>& svector<T, N, Overflow>::operator=(svector&& v) noexcept {
+small_vec<T, N, Overflow>& small_vec<T, N, Overflow>::operator=(small_vec&& v) noexcept {
     if (&v == this) return *this;
     clear();
     ensure_capacity(v.size());
@@ -2520,7 +2575,50 @@ svector<T, N, Overflow>& svector<T, N, Overflow>::operator=(svector&& v) noexcep
 }
 
 
-#endif // ZEN_SVECTOR_H
+#endif // ZEN_SMALL_VEC_H
+
+#ifndef ZEN_SPAN_H
+#define ZEN_SPAN_H
+
+
+namespace zen {
+
+template<typename T>
+struct span {
+    using value_type = T;
+
+    constexpr span() = default;
+    constexpr span(T* d, usize s)   noexcept : m_data{d}, m_size{s} {}
+    constexpr span(T* b, T* e)      noexcept : m_data{b}, m_size{static_cast<usize>(e-b)} {}
+
+    template<usize N>
+    constexpr span(T(&v)[N])        noexcept : m_data{&v[0]}, m_size{N} {}
+    
+    template<typename U, typename = std::void_t<decltype(std::declval<U&>().data() + std::declval<U&>().size())>>
+    constexpr span(U&& v)           noexcept : m_data{v.data()}, m_size{v.size()} {}
+
+    ZEN_ND constexpr bool        empty()               const noexcept { return m_size == 0; }
+    ZEN_ND constexpr usize       size()                const noexcept { return m_size; }
+    ZEN_ND constexpr T*          data()                const noexcept { return m_data; }
+    ZEN_ND constexpr T*          begin()               const noexcept { return m_data; }
+    ZEN_ND constexpr T*          end()                 const noexcept { return m_data + m_size; }
+    ZEN_ND constexpr T&          front()               const noexcept { return *m_data; }
+    ZEN_ND constexpr T&          back()                const noexcept { return *(m_data + m_size - 1); }
+    ZEN_ND constexpr T&          operator[](usize i)   const noexcept { return m_data[i]; }
+
+private:
+    T*     m_data{};
+    usize  m_size{};
+};
+
+// Deduction guides
+template<typename T>          span(T*, usize) -> span<T>;
+template<typename T>          span(T*, T*)    -> span<T>;
+template<typename T, usize N> span(T(&)[N])   -> span<T>;
+
+}
+
+#endif // ZEN_SPAN_H
 
 
 #ifndef ZEN_TUPLE_H

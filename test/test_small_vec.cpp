@@ -1,26 +1,26 @@
 #include "catch.hpp"
 
 #include "zen_span.h"
-#include "zen_svector.h"
+#include "zen_small_vec.h"
 
-TEST_CASE("svector, functionalities", "[Utilities]")
+TEST_CASE("small_vec, functionalities", "[Utilities]")
 {
-    zen::svector<int, 4> v;
+    zen::small_vec<int, 4> v;
 
     SECTION("constructors") {
-        zen::fvector<int, 4> a0;
-        zen::fvector<int, 4> a1{1,2,3,4};
-        zen::fvector<int, 4> a2{zen::span<int>{a1}};
+        zen::fixed_vec<int, 4> a0;
+        zen::fixed_vec<int, 4> a1{1,2,3,4};
+        zen::fixed_vec<int, 4> a2{zen::span<int>{a1}};
         REQUIRE( 4 == a1.size() );
         REQUIRE( 4 == a2.size() );
-        // zen::fvector<int, 4> a3{std::pmr::get_default_resource()}; // compile error
+        // zen::fixed_vec<int, 4> a3{std::pmr::get_default_resource()}; // compile error
 
-        zen::svector<int, 4> v0;
-        zen::svector<int, 4> v1{1,2,3,4};
-        zen::svector<int, 4> v2{zen::span<int>{v1}};
+        zen::small_vec<int, 4> v0;
+        zen::small_vec<int, 4> v1{1,2,3,4};
+        zen::small_vec<int, 4> v2{zen::span<int>{v1}};
         REQUIRE( 4 == v1.size() );
         REQUIRE( 4 == v2.size() );
-        zen::svector<int, 4> v3{std::pmr::get_default_resource()};
+        zen::small_vec<int, 4> v3{std::pmr::get_default_resource()};
     }
 
     SECTION("push-pop")
@@ -121,7 +121,7 @@ TEST_CASE("svector, functionalities", "[Utilities]")
 
         SECTION("bug - stack->heap resize when empty")
         {
-            zen::svector<int, 8> b;
+            zen::small_vec<int, 8> b;
             for (int iter = 0; iter < 2; ++iter) {
                 b.clear();
                 if (iter == 1) {
@@ -327,13 +327,13 @@ struct fake_value {
 };
 value_info fake_value::info{};
 
-TEST_CASE("svector RAII", "[Utilities]")
+TEST_CASE("small_vec RAII", "[Utilities]")
 {
     // TODO: Test insert, erase, resize and shrink to fit RAII
 
     SECTION("single value")
     {
-        zen::svector<fake_value, 4> v;
+        zen::small_vec<fake_value, 4> v;
 
         SECTION("emplace back")
         {
@@ -380,12 +380,12 @@ TEST_CASE("svector RAII", "[Utilities]")
 
     SECTION("single value O(N) operations")
     {
-        zen::svector<fake_value, 4> v;
+        zen::small_vec<fake_value, 4> v;
     }
 
     SECTION("nested values")
     {
-        zen::svector<zen::svector<fake_value, 4>, 4> v;
+        zen::small_vec<zen::small_vec<fake_value, 4>, 4> v;
     }
 
     fake_value::reset();

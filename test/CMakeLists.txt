@@ -5,7 +5,7 @@ add_executable(test tests.cpp
     test_macros.cpp    
     test_fmt.cpp    
     test_span.cpp
-    test_svector.cpp)
+    test_small_vec.cpp)
     
 target_include_directories(test PRIVATE ../src)
 

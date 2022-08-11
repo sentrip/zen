@@ -53,11 +53,12 @@ struct result {
     static_assert(!std::is_same_v<T, Code>, "T must not be the same type as Code");
     static_assert(impl::result_code_is_integral<Code>::value, "Code must derive from an integral type");
 
-    ZEN_FORCEINLINE constexpr result()                          noexcept : v{}, c{} {}
+    ZEN_FORCEINLINE constexpr result()                          noexcept : v{}, c{std::is_same_v<T, empty_t> ? Success : Code{}} {}
+
     ZEN_FORCEINLINE constexpr result(const T& value)            noexcept : v{value}, c{Success} {}
+
     ZEN_FORCEINLINE constexpr result(T&&  value)                noexcept : v{ZEN_FWD(value)}, c{Success} {}
-    
-    template<typename = std::enable_if_t<!std::is_same_v<Code, bool>>>
+
     ZEN_FORCEINLINE constexpr result(Code code)                 noexcept : c{code} {}
 
     template<typename = std::enable_if_t<std::is_same_v<Code, bool>>>

@@ -94,7 +94,7 @@ struct buffer : sstring<N> {
     using sstring<N>::begin;
     using sstring<N>::end;
     using sstring<N>::max_size;
-    using sstring<N>::size_type;
+    using size_type = typename sstring<N>::size_type;
     
     buffer() = default;
 
@@ -122,16 +122,16 @@ struct buffer : sstring<N> {
     buffer& operator<<(const void* v)          noexcept { append("0x", 2); set_size(size_type(int_to_chars<16>(end(), begin() + max_size(), u64(reinterpret_cast<uintptr_t>(v))) - begin())); return *this; }
 
     template<typename T>
-    buffer& operator<<(const binary<T>& v)     noexcept { append("0b", 2); set_size(size_type(int_to_chars<2>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const binary<T>& v)     noexcept { set_size(size_type(int_to_chars<2>(end(), begin() + max_size(), v.value) - begin())); return *this; }
 
     template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    buffer& operator<<(const hex<T>& v)        noexcept { append("0x", 2); set_size(size_type(int_to_chars<16>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const hex<T>& v)        noexcept { set_size(size_type(int_to_chars<16>(end(), begin() + max_size(), v.value) - begin())); return *this; }
 
     template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    buffer& operator<<(const hexu<T>& v)       noexcept { append("0x", 2); set_size(size_type(int_to_chars<16 | impl::HEX_UPPER>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const hexu<T>& v)       noexcept { set_size(size_type(int_to_chars<16 | impl::HEX_UPPER>(end(), begin() + max_size(), v.value) - begin())); return *this; }
     
     template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-    buffer& operator<<(const octal<T>& v)      noexcept { append("0o", 2); set_size(size_type(int_to_chars<8>(end(), begin() + max_size(), v.value) - begin())); return *this; }
+    buffer& operator<<(const octal<T>& v)      noexcept { set_size(size_type(int_to_chars<8>(end(), begin() + max_size(), v.value) - begin())); return *this; }
 
     template<typename T, typename = std::enable_if_t<std::is_floating_point_v<T>>>
     buffer& operator<<(const precisev<T>& v)   noexcept { set_size(size_type(float_to_chars(end(), begin() + max_size(), v.value, usize(v.precision)) - begin())); return *this; }
@@ -243,6 +243,15 @@ void format_part(Out& out, string_view spec, T&& value) noexcept {
         if (!format_parse_spec(spec, style, fill, align, n, precision)) {
             // panic fail
         }
+        if constexpr(std::is_integral_v<std::remove_reference_t<T>>) {
+            switch (style) {
+                case 'b': out << "0b"; break;
+                case 'x': out << "0x"; break;
+                case 'X': out << "0x"; break;
+                case 'o': out << "0o"; break;
+                default: break;
+            }
+        } 
         if (ZEN_LIKELY(align == '<')) {
             const usize o = out.size();
             format_with_style(out, style, precision, ZEN_FWD(value));
@@ -360,7 +369,7 @@ constexpr bool chars_to_int(const char* begin, const char* end, T& value, num::i
 }
 
 template<usize Base, typename T>
-char* int_to_chars(char* begin, char* end, const T& value, num::index_t<Base>) noexcept
+char* int_to_chars(char* begin, [[maybe_unused]] char* end, const T& value, num::index_t<Base>) noexcept
 {
     auto val = value;
     if constexpr(std::is_signed_v<T>) {
@@ -392,7 +401,7 @@ char* int_to_chars(char* begin, char* end, const T& value, num::index_t<Base>) n
         *(--p) = str100p[val];
         const auto* b = reinterpret_cast<const char*>(p) + (val < 10);
         const auto n = reinterpret_cast<const char*>(buffer + 10) - b;        
-        assert((end - begin) >= n && "Not enough space to format integer");
+        // assert((end - begin) >= n && "Not enough space to format integer");
         memcpy(begin, b, n);
         return begin + n;
     }
@@ -411,7 +420,7 @@ char* int_to_chars(char* begin, char* end, const T& value, num::index_t<Base>) n
             *p = OUTPUT[old - (val * DIVISOR)];
         }
         const auto n = buffer + 64 - p;
-        assert((end - begin) >= n && "Not enough space to format integer");
+        // assert((end - begin) >= n && "Not enough space to format integer");
         memcpy(begin, p, n);
         return begin + n;
     }
