@@ -25,12 +25,12 @@ using fixed_vec = small_vec<T, N, false>;
 namespace impl {
 
 template<typename T, usize N, bool CanOverflow, typename = void>
-struct svec_base;
+struct small_vec_base;
 
 }
 
 template<typename T, usize N, bool Overflow>
-struct small_vec : impl::svec_base<T, N, Overflow> {
+struct small_vec : impl::small_vec_base<T, N, Overflow> {
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
@@ -39,7 +39,7 @@ struct small_vec : impl::svec_base<T, N, Overflow> {
     using iterator = T*;
     using const_iterator = const T*;
     using init_list = std::initializer_list<T>;
-    using base_type = impl::svec_base<T, N, Overflow>;
+    using base_type = impl::small_vec_base<T, N, Overflow>;
     using size_type = typename base_type::size_type;
     using base_type::base_type;
 
@@ -121,7 +121,7 @@ private:
 namespace impl {
     
 template<typename T, bool CanOverflow>
-struct svec_base<T, 0, CanOverflow> {
+struct small_vec_base<T, 0, CanOverflow> {
 protected:
     static ZEN_FORCEINLINE constexpr bool has_capacity(usize) noexcept { return true; }
     static ZEN_FORCEINLINE constexpr void resize_shrink(usize) {}
@@ -130,16 +130,16 @@ protected:
     static ZEN_FORCEINLINE constexpr void ensure_capacity_insert(const T*, usize) {}
 
 public:
-    ZEN_FORCEINLINE constexpr svec_base() {}
+    ZEN_FORCEINLINE constexpr small_vec_base() {}
     static ZEN_FORCEINLINE constexpr bool         small()           noexcept { return true; }
     static ZEN_FORCEINLINE constexpr usize        capacity()        noexcept { return 0; }
     static ZEN_FORCEINLINE constexpr T*           data()            noexcept { return nullptr; }
     static ZEN_FORCEINLINE constexpr void         shrink_to_fit() {}
-    static ZEN_FORCEINLINE constexpr void         swap(svec_base& other) noexcept {}
+    static ZEN_FORCEINLINE constexpr void         swap(small_vec_base& other) noexcept {}
 };
 
 template<typename T, usize N>
-struct svec_base<T, N, false, std::enable_if_t<N != 0>> {
+struct small_vec_base<T, N, false, std::enable_if_t<N != 0>> {
     using size_type = num::with::max_value<N>;
 protected:
     mem::aligned_buffer<T, N * sizeof(T)> m_buf{};
@@ -162,13 +162,13 @@ protected:
     }
 
 public:
-    ZEN_FORCEINLINE constexpr              svec_base() : m_size{0} {}
+    ZEN_FORCEINLINE constexpr              small_vec_base() : m_size{0} {}
     ZEN_FORCEINLINE static constexpr bool  small()           noexcept { return true; }
     ZEN_FORCEINLINE static constexpr usize capacity()        noexcept { return N; }
     ZEN_FORCEINLINE constexpr T*           data()            noexcept { return m_buf; }
     ZEN_FORCEINLINE constexpr const T*     data()      const noexcept { return m_buf; }
     ZEN_FORCEINLINE constexpr void         shrink_to_fit() {}
-    ZEN_FORCEINLINE constexpr void         swap(svec_base& other) noexcept {
+    ZEN_FORCEINLINE constexpr void         swap(small_vec_base& other) noexcept {
         mem::swap_ranges(data(), m_size, other.data(), other.m_size);
         std::swap(m_size, other.m_size);
     }
@@ -176,7 +176,7 @@ public:
 
 
 template<typename T, usize N>
-struct svec_base<T, N, true, std::enable_if_t<N != 0>> {
+struct small_vec_base<T, N, true, std::enable_if_t<N != 0>> {
     using size_type = usize;
 protected:
     T* m_data{};
@@ -238,7 +238,7 @@ protected:
     }
 
 public:
-    ZEN_FORCEINLINE constexpr           svec_base(alloc_t<> alloc = std::pmr::get_default_resource()) : m_data{m_buf}, m_size{0}, m_cap{N}, alloc{alloc} {}
+    ZEN_FORCEINLINE constexpr           small_vec_base(alloc_t<> alloc = std::pmr::get_default_resource()) : m_data{m_buf}, m_size{0}, m_cap{N}, alloc{alloc} {}
     ZEN_FORCEINLINE constexpr bool      small()     const noexcept { return m_cap == N; }
     ZEN_FORCEINLINE constexpr usize     capacity()  const noexcept { return m_cap; }
     ZEN_FORCEINLINE constexpr T*        data()            noexcept { return m_data; }
@@ -254,7 +254,7 @@ public:
         m_data = buf;
     }
     
-    ZEN_FORCEINLINE constexpr void      swap(svec_base& other) noexcept {
+    ZEN_FORCEINLINE constexpr void      swap(small_vec_base& other) noexcept {
         if (small() && other.small()) {
             mem::swap_ranges(data(), m_size, other.data(), other.m_size);
             std::swap(m_size, other.m_size);
@@ -425,7 +425,7 @@ inline void small_vec<T, N, Overflow>::resize(size_type n, const T& value) {
 }
 
 template<typename T, usize N, bool Overflow>
-small_vec<T, N, Overflow>::small_vec(const small_vec& v) {
+small_vec<T, N, Overflow>::small_vec(const small_vec& v) : base_type{} {
     for(auto& a: v) push_back(a);
 }
 
